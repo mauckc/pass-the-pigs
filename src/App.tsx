@@ -523,9 +523,9 @@ export default function App() {
                     </div>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
                     {/* Arena */}
-                    <div className="bg-white rounded-2xl p-6 shadow-inner border relative overflow-hidden">
+                    <div className="lg:col-span-1 bg-white rounded-2xl p-6 shadow-inner border relative overflow-hidden">
                       <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: "radial-gradient(circle at 20% 20%, rgba(0,0,0,0.04), transparent 45%), radial-gradient(circle at 80% 50%, rgba(0,0,0,0.03), transparent 35%)" }} />
                       <div className="flex items-center justify-center gap-8 h-44">
                         <PigEmoji pose={state.history[state.history.length - 1]?.pigs[0]?.pose ?? "Sider-Left"} i={0} rolling={rolling} />
@@ -545,7 +545,7 @@ export default function App() {
                     </div>
 
                     {/* History */}
-                    <div className="bg-white rounded-2xl p-4 shadow border">
+                    <div className="lg:col-span-2 bg-white rounded-2xl p-4 shadow border min-w-0">
                       <div className="flex items-center justify-between">
                         <div className="font-semibold">This Turn</div>
                         <div className="text-sm text-muted-foreground">{state.history.length} roll{state.history.length === 1 ? "" : "s"}</div>
@@ -559,14 +559,14 @@ export default function App() {
                             .slice()
                             .reverse()
                             .map((r, idx) => (
-                              <div key={idx} className="flex items-center justify-between bg-amber-50/60 p-2 rounded-xl">
-                                <div className="flex items-center gap-2">
+                              <div key={idx} className="flex items-center justify-between bg-amber-50/60 p-2 rounded-xl min-w-0">
+                                <div className="flex items-center gap-2 min-w-0 flex-1">
                                   <ScoreBadge pose={r.pigs[0].pose} />
                                   <span className="opacity-50">+</span>
                                   <ScoreBadge pose={r.pigs[1].pose} />
-                                  <span className="text-xs text-muted-foreground ml-2">{r.event}</span>
+                                  <span className="text-xs text-muted-foreground ml-2 truncate">{r.event}</span>
                                 </div>
-                                <div className="font-bold tabular-nums">{r.points}</div>
+                                <div className="font-bold tabular-nums ml-2 flex-shrink-0">{r.points}</div>
                               </div>
                             ))
                         )}
