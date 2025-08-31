@@ -181,7 +181,7 @@ const PigEmoji: React.FC<{ pose: PigPose; i: number; rolling?: boolean }> = ({ p
   const variants: Record<PigPose, { rotate: number; y: number; x: number; scale?: number }> = {
     "Sider-Left": { rotate: -90, y: 8, x: -10 },
     "Sider-Right": { rotate: 90, y: 8, x: 10 },
-    Razorback: { rotate: 180, y: -8, x: 0 }, // Pig on its back
+    Razorback: { rotate: 180, y: 8, x: 0 }, // Pig on its back
     Trotter: { rotate: 0, y: -20, x: 0, scale: 1.05 }, // Pig on front legs
     Snouter: { rotate: -45, y: -6, x: 6 }, // Pig on snout
     "Leaning Jowler": { rotate: 45, y: -2, x: 12 }, // Pig leaning on ear
