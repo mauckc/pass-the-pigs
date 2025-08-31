@@ -52,6 +52,8 @@ type GameState = {
   finalLeaderIndex: number | null; // who triggered final round
   finalLeaderScore: number; // score to beat
   finalTurns: Record<string, boolean> | null; // playerId -> took last chance
+  // Pass the pigs state
+  needsToPassPigs: boolean; // true when player needs to click "Pass the Pigs" after getting pigs out
 };
 
 // Scoring values
@@ -237,6 +239,7 @@ export default function App() {
     finalLeaderIndex: null,
     finalLeaderScore: 0,
     finalTurns: null,
+    needsToPassPigs: false,
   };
 
   const [state, setState] = useLocalState<GameState>(STORAGE_KEY, defaultState);
@@ -268,6 +271,7 @@ export default function App() {
       target: s.target,
       settings: s.settings,
       started: false,
+      needsToPassPigs: false,
     }));
   };
 
@@ -291,7 +295,21 @@ export default function App() {
       if (!pigOut) {
         return { ...s, history: newHistory, turnPoints: s.turnPoints + points };
       }
-      // Pig Out ends the turn immediately
+      // Pig Out - player needs to click "Pass the Pigs" to continue
+      return {
+        ...s,
+        history: newHistory,
+        needsToPassPigs: true,
+      };
+    });
+
+    setRolling(false);
+  };
+
+  const passThePigs = () => {
+    if (rolling || winner || !state.needsToPassPigs) return;
+    setState((s) => {
+      // End the turn and move to next player
       const curId = s.players[s.currentIndex].id;
       const nextIndex = (s.currentIndex + 1) % s.players.length;
       let finalTurns = s.finalTurns ? { ...s.finalTurns } : null;
@@ -304,10 +322,9 @@ export default function App() {
         turnPoints: 0,
         currentIndex: nextIndex,
         finalTurns,
+        needsToPassPigs: false,
       };
     });
-
-    setRolling(false);
   };
 
   const hold = () => {
@@ -336,6 +353,7 @@ export default function App() {
           finalLeaderIndex: s.currentIndex,
           finalLeaderScore: newScore,
           finalTurns: turns,
+          needsToPassPigs: false,
         };
       }
 
@@ -352,6 +370,7 @@ export default function App() {
           currentIndex: nextIndex,
           finalTurns: turns,
           finalLeaderScore: Math.max(s.finalLeaderScore, newScore),
+          needsToPassPigs: false,
         };
       }
 
@@ -362,6 +381,7 @@ export default function App() {
         turnPoints: 0,
         history: [],
         currentIndex: (s.currentIndex + 1) % s.players.length,
+        needsToPassPigs: false,
       };
     });
   };
@@ -514,7 +534,7 @@ export default function App() {
                   <ul className="list-disc pl-5 space-y-1">
                     <li>On your turn, roll two pigs as many times as you like to build <strong>Turn Points</strong>.</li>
                     <li><strong>Hold</strong> to bank Turn Points into your total, then the next player goes.</li>
-                    <li><strong>Pig Out</strong>: opposite sides (Left + Right) → 0 for the turn and it immediately ends.</li>
+                    <li><strong>Pig Out</strong>: opposite sides (Left + Right) → 0 for the turn and you must click "Pass the Pigs" to end your turn.</li>
                     <li><strong>Sider</strong>: same sides (Left + Left or Right + Right) → +1 point.</li>
                     <li><strong>Single + Sider</strong>: one special + one sider → score the special's value.</li>
                     <li><strong>Two specials</strong>: add values. If they match, score <em>double the sum</em>.</li>
@@ -531,7 +551,7 @@ export default function App() {
                     <div className="space-y-1">
                       <div className="font-semibold">Other</div>
                       <div>Sider (same sides) = 1</div>
-                      <div>Pig Out (opposite sides) = 0 and end turn</div>
+                      <div>Pig Out (opposite sides) = 0 and pass pigs</div>
                       <div>Double (e.g., Double Snouter) = (value+value) × 2</div>
                     </div>
                   </div>
@@ -584,11 +604,24 @@ export default function App() {
                         <div className="text-4xl font-extrabold tabular-nums">{state.turnPoints}</div>
                       </div>
                       <div className="mt-4 flex items-center justify-center gap-3">
-                        <Button size="lg" onClick={roll} disabled={rolling} className="px-8">Roll</Button>
-                        <Button size="lg" variant="secondary" onClick={hold} disabled={rolling || state.turnPoints === 0}>Hold</Button>
+                        {state.needsToPassPigs ? (
+                          <Button size="lg" onClick={passThePigs} disabled={rolling} className="px-8 bg-red-600 hover:bg-red-700">
+                            Pass the Pigs
+                          </Button>
+                        ) : (
+                          <>
+                            <Button size="lg" onClick={roll} disabled={rolling} className="px-8">Roll</Button>
+                            <Button size="lg" variant="secondary" onClick={hold} disabled={rolling || state.turnPoints === 0}>Hold</Button>
+                          </>
+                        )}
                       </div>
                       {state.settings.showRollHints && (
-                        <div className="mt-3 text-center text-xs text-muted-foreground">Rolling risks a Pig Out (opposite sides) that ends your turn.</div>
+                        <div className="mt-3 text-center text-xs text-muted-foreground">
+                          {state.needsToPassPigs 
+                            ? "You got Pig Out! Click 'Pass the Pigs' to end your turn."
+                            : "Rolling risks a Pig Out (opposite sides) that requires you to pass the pigs."
+                          }
+                        </div>
                       )}
                     </div>
 
