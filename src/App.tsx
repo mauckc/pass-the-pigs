@@ -215,8 +215,21 @@ const PigEmoji: React.FC<{ pose: PigPose; i: number; rolling?: boolean }> = ({ p
     <motion.div
       className="relative text-6xl select-none"
       initial={{ y: -60, rotate: (i ? -1 : 1) * 45, opacity: 0 }}
-      animate={rolling ? { y: [0, -24, 0], rotate: [0, 20, -15, 0], opacity: 1 } : { ...v, opacity: 1 }}
-      transition={{ duration: rolling ? 0.6 : 0.35, ease: "easeOut" }}
+      animate={rolling ? { 
+        y: [0, -40, 20, -15, 0], 
+        rotate: [0, 45, -30, 25, -15, 0], 
+        scale: [1, 1.1, 0.9, 1.05, 1],
+        x: [0, i ? 8 : -8, i ? -6 : 6, i ? 4 : -4, 0],
+        opacity: 1,
+        filter: ["drop-shadow(0 0 0 rgba(0,0,0,0))", "drop-shadow(0 4px 8px rgba(0,0,0,0.3))", "drop-shadow(0 0 0 rgba(0,0,0,0))"],
+        skewX: [0, 2, -2, 1, -1, 0]
+      } : { ...v, opacity: 1 }}
+      transition={{ 
+        duration: rolling ? 0.8 : 0.35, 
+        ease: rolling ? "easeInOut" : "easeOut",
+        times: rolling ? [0, 0.2, 0.4, 0.6, 0.8, 1] : undefined
+      }}
+      whileHover={rolling ? {} : { scale: 1.05, transition: { duration: 0.1 } }}
     >
       {/* Pose indicator badge - only show when not rolling, always at top */}
       {!rolling && (
@@ -233,9 +246,20 @@ const PigEmoji: React.FC<{ pose: PigPose; i: number; rolling?: boolean }> = ({ p
       )}
       
       {/* Main pig emoji */}
-      <div className="relative">
+      <motion.div 
+        className="relative"
+        animate={rolling ? {
+          y: [0, -2, 0],
+          rotate: [0, 2, -2, 0]
+        } : {}}
+        transition={rolling ? {
+          duration: 0.3,
+          repeat: Infinity,
+          ease: "easeInOut"
+        } : {}}
+      >
         🐖
-      </div>
+      </motion.div>
     </motion.div>
   );
 };
@@ -725,17 +749,40 @@ export default function App() {
                       </div>
                       <div className="mt-4 text-center">
                         <div className="text-sm text-muted-foreground">Turn Points</div>
-                        <div className="text-4xl font-extrabold tabular-nums">{state.turnPoints}</div>
+                        <motion.div 
+                          key={state.turnPoints}
+                          initial={{ scale: 1.2, y: -10 }}
+                          animate={{ scale: 1, y: 0 }}
+                          transition={{ duration: 0.3, ease: "easeOut" }}
+                          className="text-4xl font-extrabold tabular-nums"
+                        >
+                          {state.turnPoints}
+                        </motion.div>
                       </div>
                       <div className="mt-4 flex items-center justify-center gap-3">
                         {state.needsToPassPigs ? (
-                          <Button size="lg" onClick={passThePigs} disabled={rolling} className="px-8 bg-red-600 hover:bg-red-700">
-                            Pass the Pigs
-                          </Button>
+                          <motion.div
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                          >
+                            <Button size="lg" onClick={passThePigs} disabled={rolling} className="px-8 bg-red-600 hover:bg-red-700">
+                              Pass the Pigs
+                            </Button>
+                          </motion.div>
                         ) : (
                           <>
-                            <Button size="lg" onClick={roll} disabled={rolling} className="px-8">Roll</Button>
-                            <Button size="lg" variant="secondary" onClick={hold} disabled={rolling || state.turnPoints === 0}>Hold</Button>
+                            <motion.div
+                              whileHover={{ scale: 1.05 }}
+                              whileTap={{ scale: 0.95 }}
+                            >
+                              <Button size="lg" onClick={roll} disabled={rolling} className="px-8">Roll</Button>
+                            </motion.div>
+                            <motion.div
+                              whileHover={{ scale: 1.05 }}
+                              whileTap={{ scale: 0.95 }}
+                            >
+                              <Button size="lg" variant="secondary" onClick={hold} disabled={rolling || state.turnPoints === 0}>Hold</Button>
+                            </motion.div>
                           </>
                         )}
                       </div>
