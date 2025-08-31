@@ -186,24 +186,87 @@ const PigEmoji: React.FC<{ pose: PigPose; i: number; rolling?: boolean }> = ({ p
     Snouter: { rotate: -45, y: -6, x: 6 }, // Pig on snout
     "Leaning Jowler": { rotate: 45, y: -2, x: 12 }, // Pig leaning on ear
   };
+
+  // Color schemes for each pose
+  const poseColors: Record<PigPose, { bg: string; border: string; indicator: string }> = {
+    "Sider-Left": { bg: "bg-gray-100", border: "border-gray-300", indicator: "bg-gray-500" },
+    "Sider-Right": { bg: "bg-gray-100", border: "border-gray-300", indicator: "bg-gray-500" },
+    Razorback: { bg: "bg-blue-100", border: "border-blue-300", indicator: "bg-blue-500" },
+    Trotter: { bg: "bg-green-100", border: "border-green-300", indicator: "bg-green-500" },
+    Snouter: { bg: "bg-purple-100", border: "border-purple-300", indicator: "bg-purple-500" },
+    "Leaning Jowler": { bg: "bg-orange-100", border: "border-orange-300", indicator: "bg-orange-500" },
+  };
+
+  // Pose-specific indicators
+  const poseIndicators: Record<PigPose, string> = {
+    "Sider-Left": "◀",
+    "Sider-Right": "▶", 
+    Razorback: "●",
+    Trotter: "▲",
+    Snouter: "◆",
+    "Leaning Jowler": "★",
+  };
+
   const v = variants[pose];
+  const colors = poseColors[pose];
+  const indicator = poseIndicators[pose];
+
   return (
     <motion.div
-      className="text-6xl select-none"
+      className="relative text-6xl select-none"
       initial={{ y: -60, rotate: (i ? -1 : 1) * 45, opacity: 0 }}
       animate={rolling ? { y: [0, -24, 0], rotate: [0, 20, -15, 0], opacity: 1 } : { ...v, opacity: 1 }}
       transition={{ duration: rolling ? 0.6 : 0.35, ease: "easeOut" }}
     >
-      🐖
+      {/* Pose indicator badge - only show when not rolling */}
+      {!rolling && (
+        <div className={`absolute -top-2 -right-2 w-6 h-6 rounded-full ${colors.indicator} text-white text-xs flex items-center justify-center font-bold shadow-md`}>
+          {indicator}
+        </div>
+      )}
+      
+      {/* Main pig emoji */}
+      <div className="relative">
+        🐖
+      </div>
     </motion.div>
   );
 };
 
-const ScoreBadge: React.FC<{ pose: PigPose }> = ({ pose }) => (
-  <Badge variant="secondary" className="font-mono">
-    {poseLabelShort[pose]}
-  </Badge>
-);
+const ScoreBadge: React.FC<{ pose: PigPose }> = ({ pose }) => {
+  // Color schemes for each pose (matching the pig colors)
+  const poseColors: Record<PigPose, { bg: string; text: string; border: string }> = {
+    "Sider-Left": { bg: "bg-gray-100", text: "text-gray-700", border: "border-gray-300" },
+    "Sider-Right": { bg: "bg-gray-100", text: "text-gray-700", border: "border-gray-300" },
+    Razorback: { bg: "bg-blue-100", text: "text-blue-700", border: "border-blue-300" },
+    Trotter: { bg: "bg-green-100", text: "text-green-700", border: "border-green-300" },
+    Snouter: { bg: "bg-purple-100", text: "text-purple-700", border: "border-purple-300" },
+    "Leaning Jowler": { bg: "bg-orange-100", text: "text-orange-700", border: "border-orange-300" },
+  };
+
+  // Pose-specific icons
+  const poseIcons: Record<PigPose, string> = {
+    "Sider-Left": "◀",
+    "Sider-Right": "▶",
+    Razorback: "●",
+    Trotter: "▲",
+    Snouter: "◆",
+    "Leaning Jowler": "★",
+  };
+
+  const colors = poseColors[pose];
+  const icon = poseIcons[pose];
+
+  return (
+    <Badge 
+      variant="secondary" 
+      className={`font-mono border ${colors.bg} ${colors.text} ${colors.border} flex items-center gap-1`}
+    >
+      <span className="text-xs">{icon}</span>
+      {poseLabelShort[pose]}
+    </Badge>
+  );
+};
 
 // --------------------- INTERNAL TESTS ----------------------
 function runInternalTests() {
@@ -598,6 +661,34 @@ export default function App() {
                       <div className="flex items-center justify-center gap-8 h-44">
                         <PigEmoji pose={state.history[state.history.length - 1]?.pigs[0]?.pose ?? "Sider-Left"} i={0} rolling={rolling} />
                         <PigEmoji pose={state.history[state.history.length - 1]?.pigs[1]?.pose ?? "Sider-Right"} i={1} rolling={rolling} />
+                      </div>
+                      
+                      {/* Pose Legend */}
+                      <div className="mt-4 grid grid-cols-3 gap-2 text-xs">
+                        <div className="flex items-center gap-1">
+                          <div className="w-3 h-3 bg-gray-500 rounded-full flex items-center justify-center text-white text-[8px]">◀</div>
+                          <span>Sider Left</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <div className="w-3 h-3 bg-gray-500 rounded-full flex items-center justify-center text-white text-[8px]">▶</div>
+                          <span>Sider Right</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <div className="w-3 h-3 bg-blue-500 rounded-full flex items-center justify-center text-white text-[8px]">●</div>
+                          <span>Razorback</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <div className="w-3 h-3 bg-green-500 rounded-full flex items-center justify-center text-white text-[8px]">▲</div>
+                          <span>Trotter</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <div className="w-3 h-3 bg-purple-500 rounded-full flex items-center justify-center text-white text-[8px]">◆</div>
+                          <span>Snouter</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <div className="w-3 h-3 bg-orange-500 rounded-full flex items-center justify-center text-white text-[8px]">★</div>
+                          <span>Leaning Jowler</span>
+                        </div>
                       </div>
                       <div className="mt-4 text-center">
                         <div className="text-sm text-muted-foreground">Turn Points</div>
