@@ -218,9 +218,16 @@ const PigEmoji: React.FC<{ pose: PigPose; i: number; rolling?: boolean }> = ({ p
       animate={rolling ? { y: [0, -24, 0], rotate: [0, 20, -15, 0], opacity: 1 } : { ...v, opacity: 1 }}
       transition={{ duration: rolling ? 0.6 : 0.35, ease: "easeOut" }}
     >
-      {/* Pose indicator badge - only show when not rolling */}
+      {/* Pose indicator badge - only show when not rolling, always at top */}
       {!rolling && (
-        <div className={`absolute -top-2 -right-2 w-6 h-6 rounded-full ${colors.indicator} text-white text-xs flex items-center justify-center font-bold shadow-md`}>
+        <div 
+          className={`absolute w-4 h-4 rounded-full ${colors.indicator} bg-opacity-70 text-white text-[8px] flex items-center justify-center font-medium z-10`}
+          style={{
+            top: '-8px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+          }}
+        >
           {indicator}
         </div>
       )}
