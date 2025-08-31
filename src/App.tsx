@@ -8,6 +8,7 @@ import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { ChevronLeft, ChevronRight, Dice6, Plus, RefreshCcw, Settings, Trophy } from "lucide-react";
+import confetti from "canvas-confetti";
 
 // ---------------------------------------------
 // Pass the Pigs — Single-file React game (TypeScript)
@@ -43,6 +44,7 @@ type GameState = {
   settings: {
     weights: Record<PigPose, number>;
     confettiOnWin: boolean;
+    confettiOnSpecialRolls: boolean;
     showRollHints: boolean;
   };
   // Final-round state
@@ -65,10 +67,10 @@ const POSE_VALUES: Record<PigPose, number> = {
 // Default outcome weights (rough / arcade-like)
 const DEFAULT_WEIGHTS: Record<PigPose, number> = {
   "Sider-Left": 35,
-  "Sider-Right": 35,
-  Razorback: 12,
-  Trotter: 12,
-  Snouter: 5,
+  "Sider-Right": 30,
+  Razorback: 22,
+  Trotter: 9,
+  Snouter: 3,
   "Leaning Jowler": 1,
 };
 
@@ -85,6 +87,32 @@ const randWeighted = (weights: Record<PigPose, number>): PigPose => {
     if (r <= 0) return pose;
   }
   return entries[entries.length - 1][0];
+};
+
+// Trigger confetti for special dice combinations
+const triggerConfetti = (pose1: PigPose, pose2: PigPose, enabled: boolean) => {
+  if (!enabled) return;
+  
+  // Check for double special poses
+  if (pose1 === pose2 && (pose1 === "Razorback" || pose1 === "Trotter" || pose1 === "Snouter")) {
+    confetti({
+      particleCount: 100,
+      spread: 70,
+      origin: { y: 0.6 }
+    });
+    return;
+  }
+  
+  // Check for any Leaning Jowler
+  if (pose1 === "Leaning Jowler" || pose2 === "Leaning Jowler") {
+    confetti({
+      particleCount: 80,
+      spread: 60,
+      origin: { y: 0.6 },
+      colors: ['#FFD700', '#FFA500', '#FF6347', '#FF69B4']
+    });
+    return;
+  }
 };
 
 const poseLabelShort: Record<PigPose, string> = {
@@ -202,6 +230,7 @@ export default function App() {
     settings: {
       weights: { ...DEFAULT_WEIGHTS },
       confettiOnWin: true,
+      confettiOnSpecialRolls: true,
       showRollHints: true,
     },
     finalRound: false,
@@ -249,6 +278,9 @@ export default function App() {
     const a = randWeighted(state.settings.weights);
     const b = randWeighted(state.settings.weights);
     const { points, event } = scorePair(a, b);
+
+    // Trigger confetti for special combinations
+    triggerConfetti(a, b, state.settings.confettiOnSpecialRolls);
 
     setState((s) => {
       const newHistory: Roll[] = [
@@ -428,6 +460,13 @@ export default function App() {
                   <Switch
                     checked={state.settings.confettiOnWin}
                     onCheckedChange={(v) => setState((s) => ({ ...s, settings: { ...s.settings, confettiOnWin: v } }))}
+                  />
+                </div>
+                <div className="flex items-center justify-between">
+                  <Label>Confetti on special rolls</Label>
+                  <Switch
+                    checked={state.settings.confettiOnSpecialRolls}
+                    onCheckedChange={(v) => setState((s) => ({ ...s, settings: { ...s.settings, confettiOnSpecialRolls: v } }))}
                   />
                 </div>
                 <div className="flex items-center justify-between">
