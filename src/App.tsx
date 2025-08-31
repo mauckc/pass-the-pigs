@@ -66,12 +66,12 @@ const POSE_VALUES: Record<PigPose, number> = {
 
 // Default outcome weights (rough / arcade-like)
 const DEFAULT_WEIGHTS: Record<PigPose, number> = {
-  "Sider-Left": 35,
-  "Sider-Right": 30,
-  Razorback: 22,
-  Trotter: 9,
+  "Sider-Left": 34.9,
+  "Sider-Right": 30.2,
+  Razorback: 22.4,
+  Trotter: 8.8,
   Snouter: 3,
-  "Leaning Jowler": 1,
+  "Leaning Jowler": 0.7,
 };
 
 // Local storage key
@@ -385,6 +385,10 @@ export default function App() {
     setState((s) => ({ ...s, settings: { ...s.settings, weights: { ...s.settings.weights, [pose]: val } } }));
   };
 
+  const resetWeightsToDefault = () => {
+    setState((s) => ({ ...s, settings: { ...s.settings, weights: { ...DEFAULT_WEIGHTS } } }));
+  };
+
   const current = state.players[state.currentIndex];
 
   return (
@@ -491,7 +495,12 @@ export default function App() {
                       </div>
                     ))}
                   </div>
-                  <p className="text-xs text-muted-foreground mt-2">Higher number → more likely. Values are normalized automatically.</p>
+                  <div className="flex justify-between items-center mt-3">
+                    <p className="text-xs text-muted-foreground">Higher number → more likely. Values are normalized automatically.</p>
+                    <Button variant="outline" size="sm" onClick={resetWeightsToDefault}>
+                      Reset to Default
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>
