@@ -524,9 +524,9 @@ export default function App() {
           </div>
         </header>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4">
           {/* Left: Players & Settings */}
-          <div className="lg:col-span-1 space-y-4">
+          <div className="lg:col-span-1 space-y-3 sm:space-y-4">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center justify-between">
@@ -656,7 +656,7 @@ export default function App() {
           </div>
 
           {/* Middle: Board */}
-          <div className="lg:col-span-2 space-y-4">
+          <div className="lg:col-span-2 space-y-3 sm:space-y-4">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -685,9 +685,9 @@ export default function App() {
                     </div>
                   </div>
                 ) : (
-                  <div className="space-y-6">
-                                         {/* Arena */}
-                     <div className="bg-white rounded-2xl p-6 shadow-inner border relative overflow-hidden">
+                  <div className="space-y-4 sm:space-y-6">
+                    {/* Arena */}
+                    <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-inner border relative overflow-hidden">
                        <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: "radial-gradient(circle at 20% 20%, rgba(0,0,0,0.04), transparent 45%), radial-gradient(circle at 80% 50%, rgba(0,0,0,0.03), transparent 35%)" }} />
                        
                                                {/* Roll Result Display - Always takes same space */}
@@ -721,30 +721,30 @@ export default function App() {
                        </div>
                       
                       {/* Pose Legend */}
-                      <div className="mt-4 grid grid-cols-3 gap-2 text-xs">
+                      <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
                         <div className="flex items-center gap-1">
                           <div className="w-3 h-3 bg-gray-500 rounded-full flex items-center justify-center text-white text-[8px]">◀</div>
-                          <span>Sider Left</span>
+                          <span className="break-words">Sider Left</span>
                         </div>
                         <div className="flex items-center gap-1">
                           <div className="w-3 h-3 bg-gray-500 rounded-full flex items-center justify-center text-white text-[8px]">▶</div>
-                          <span>Sider Right</span>
+                          <span className="break-words">Sider Right</span>
                         </div>
-                                                 <div className="flex items-center gap-1">
-                           <div className="w-3 h-3 bg-red-500 rounded-full flex items-center justify-center text-white text-[8px]">▼</div>
-                           <span>Razorback</span>
-                         </div>
+                        <div className="flex items-center gap-1">
+                          <div className="w-3 h-3 bg-red-500 rounded-full flex items-center justify-center text-white text-[8px]">▼</div>
+                          <span className="break-words">Razorback</span>
+                        </div>
                         <div className="flex items-center gap-1">
                           <div className="w-3 h-3 bg-green-500 rounded-full flex items-center justify-center text-white text-[8px]">▲</div>
-                          <span>Trotter</span>
+                          <span className="break-words">Trotter</span>
                         </div>
                         <div className="flex items-center gap-1">
                           <div className="w-3 h-3 bg-purple-500 rounded-full flex items-center justify-center text-white text-[8px]">◆</div>
-                          <span>Snouter</span>
+                          <span className="break-words">Snouter</span>
                         </div>
                         <div className="flex items-center gap-1">
                           <div className="w-3 h-3 bg-orange-500 rounded-full flex items-center justify-center text-white text-[8px]">★</div>
-                          <span>Leaning Jowler</span>
+                          <span className="break-words">Leaning Jowler</span>
                         </div>
                       </div>
                       <div className="mt-4 text-center">
@@ -759,7 +759,7 @@ export default function App() {
                           {state.turnPoints}
                         </motion.div>
                       </div>
-                      <div className="mt-4 flex items-center justify-center gap-3">
+                      <div className="mt-4 flex flex-col sm:flex-row items-center justify-center gap-3">
                         {state.needsToPassPigs ? (
                           <motion.div
                             whileHover={{ scale: 1.05 }}
@@ -787,7 +787,7 @@ export default function App() {
                         )}
                       </div>
                       {state.settings.showRollHints && (
-                        <div className="mt-3 text-center text-xs text-muted-foreground">
+                        <div className="mt-3 text-center text-xs text-muted-foreground px-2">
                           {state.needsToPassPigs 
                             ? "You got Pig Out! Click 'Pass the Pigs' to end your turn."
                             : "Rolling risks a Pig Out (opposite sides) that requires you to pass the pigs."
@@ -797,7 +797,7 @@ export default function App() {
                     </div>
 
                     {/* History */}
-                    <div className="bg-white rounded-2xl p-4 shadow border min-w-0">
+                    <div className="bg-white rounded-2xl p-4 shadow border">
                       <div className="flex items-center justify-between">
                         <div className="font-semibold">This Turn</div>
                         <div className="text-sm text-muted-foreground">{state.history.length} roll{state.history.length === 1 ? "" : "s"}</div>
@@ -811,12 +811,12 @@ export default function App() {
                             .slice()
                             .reverse()
                             .map((r, idx) => (
-                              <div key={idx} className="flex items-center justify-between bg-amber-50/60 p-2 rounded-xl min-w-0">
-                                <div className="flex items-center gap-2 min-w-0 flex-1">
+                              <div key={idx} className="flex items-center justify-between bg-amber-50/60 p-2 rounded-xl">
+                                <div className="flex items-center gap-2 flex-1 min-w-0">
                                   <ScoreBadge pose={r.pigs[0].pose} />
                                   <span className="opacity-50">+</span>
                                   <ScoreBadge pose={r.pigs[1].pose} />
-                                  <span className="text-xs text-muted-foreground ml-2 truncate">{r.event}</span>
+                                  <span className="text-xs text-muted-foreground ml-2 break-words leading-tight">{r.event}</span>
                                 </div>
                                 <div className="font-bold tabular-nums ml-2 flex-shrink-0">{r.points}</div>
                               </div>
