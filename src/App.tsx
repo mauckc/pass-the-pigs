@@ -562,9 +562,9 @@ export default function App() {
                     </div>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+                  <div className="space-y-6">
                     {/* Arena */}
-                    <div className="lg:col-span-1 bg-white rounded-2xl p-6 shadow-inner border relative overflow-hidden">
+                    <div className="bg-white rounded-2xl p-6 shadow-inner border relative overflow-hidden">
                       <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: "radial-gradient(circle at 20% 20%, rgba(0,0,0,0.04), transparent 45%), radial-gradient(circle at 80% 50%, rgba(0,0,0,0.03), transparent 35%)" }} />
                       <div className="flex items-center justify-center gap-8 h-44">
                         <PigEmoji pose={state.history[state.history.length - 1]?.pigs[0]?.pose ?? "Sider-Left"} i={0} rolling={rolling} />
@@ -584,7 +584,7 @@ export default function App() {
                     </div>
 
                     {/* History */}
-                    <div className="lg:col-span-2 bg-white rounded-2xl p-4 shadow border min-w-0">
+                    <div className="bg-white rounded-2xl p-4 shadow border min-w-0">
                       <div className="flex items-center justify-between">
                         <div className="font-semibold">This Turn</div>
                         <div className="text-sm text-muted-foreground">{state.history.length} roll{state.history.length === 1 ? "" : "s"}</div>
