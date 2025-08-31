@@ -662,13 +662,39 @@ export default function App() {
                   </div>
                 ) : (
                   <div className="space-y-6">
-                    {/* Arena */}
-                    <div className="bg-white rounded-2xl p-6 shadow-inner border relative overflow-hidden">
-                      <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: "radial-gradient(circle at 20% 20%, rgba(0,0,0,0.04), transparent 45%), radial-gradient(circle at 80% 50%, rgba(0,0,0,0.03), transparent 35%)" }} />
-                      <div className="flex items-center justify-center gap-8 h-44">
-                        <PigEmoji pose={state.history[state.history.length - 1]?.pigs[0]?.pose ?? "Sider-Left"} i={0} rolling={rolling} />
-                        <PigEmoji pose={state.history[state.history.length - 1]?.pigs[1]?.pose ?? "Sider-Right"} i={1} rolling={rolling} />
-                      </div>
+                                         {/* Arena */}
+                     <div className="bg-white rounded-2xl p-6 shadow-inner border relative overflow-hidden">
+                       <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: "radial-gradient(circle at 20% 20%, rgba(0,0,0,0.04), transparent 45%), radial-gradient(circle at 80% 50%, rgba(0,0,0,0.03), transparent 35%)" }} />
+                       
+                                               {/* Roll Result Display - Always takes same space */}
+                        <div className="text-center mb-4 h-20 flex items-center justify-center">
+                          {state.history.length > 0 && !rolling ? (
+                            <div>
+                              <div className="text-lg font-semibold text-gray-800">
+                                {state.history[state.history.length - 1]?.event}
+                              </div>
+                              {state.history[state.history.length - 1]?.points > 0 && (
+                                <div className="text-2xl font-bold text-green-600 mt-1">
+                                  +{state.history[state.history.length - 1]?.points} points
+                                </div>
+                              )}
+                              {state.history[state.history.length - 1]?.points === 0 && (
+                                <div className="text-lg font-medium text-red-600 mt-1">
+                                  No points this roll
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <div className="text-gray-400 text-sm">
+                              {rolling ? "Rolling..." : "Roll to see results"}
+                            </div>
+                          )}
+                        </div>
+                       
+                       <div className="flex items-center justify-center gap-8 h-44">
+                         <PigEmoji pose={state.history[state.history.length - 1]?.pigs[0]?.pose ?? "Sider-Left"} i={0} rolling={rolling} />
+                         <PigEmoji pose={state.history[state.history.length - 1]?.pigs[1]?.pose ?? "Sider-Right"} i={1} rolling={rolling} />
+                       </div>
                       
                       {/* Pose Legend */}
                       <div className="mt-4 grid grid-cols-3 gap-2 text-xs">
