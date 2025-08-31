@@ -191,7 +191,7 @@ const PigEmoji: React.FC<{ pose: PigPose; i: number; rolling?: boolean }> = ({ p
   const poseColors: Record<PigPose, { bg: string; border: string; indicator: string }> = {
     "Sider-Left": { bg: "bg-gray-100", border: "border-gray-300", indicator: "bg-gray-500" },
     "Sider-Right": { bg: "bg-gray-100", border: "border-gray-300", indicator: "bg-gray-500" },
-    Razorback: { bg: "bg-blue-100", border: "border-blue-300", indicator: "bg-blue-500" },
+    Razorback: { bg: "bg-red-100", border: "border-red-300", indicator: "bg-red-500" },
     Trotter: { bg: "bg-green-100", border: "border-green-300", indicator: "bg-green-500" },
     Snouter: { bg: "bg-purple-100", border: "border-purple-300", indicator: "bg-purple-500" },
     "Leaning Jowler": { bg: "bg-orange-100", border: "border-orange-300", indicator: "bg-orange-500" },
@@ -201,7 +201,7 @@ const PigEmoji: React.FC<{ pose: PigPose; i: number; rolling?: boolean }> = ({ p
   const poseIndicators: Record<PigPose, string> = {
     "Sider-Left": "◀",
     "Sider-Right": "▶", 
-    Razorback: "●",
+    Razorback: "▼",
     Trotter: "▲",
     Snouter: "◆",
     "Leaning Jowler": "★",
@@ -245,7 +245,7 @@ const ScoreBadge: React.FC<{ pose: PigPose }> = ({ pose }) => {
   const poseColors: Record<PigPose, { bg: string; text: string; border: string }> = {
     "Sider-Left": { bg: "bg-gray-100", text: "text-gray-700", border: "border-gray-300" },
     "Sider-Right": { bg: "bg-gray-100", text: "text-gray-700", border: "border-gray-300" },
-    Razorback: { bg: "bg-blue-100", text: "text-blue-700", border: "border-blue-300" },
+    Razorback: { bg: "bg-red-100", text: "text-red-700", border: "border-red-300" },
     Trotter: { bg: "bg-green-100", text: "text-green-700", border: "border-green-300" },
     Snouter: { bg: "bg-purple-100", text: "text-purple-700", border: "border-purple-300" },
     "Leaning Jowler": { bg: "bg-orange-100", text: "text-orange-700", border: "border-orange-300" },
@@ -255,7 +255,7 @@ const ScoreBadge: React.FC<{ pose: PigPose }> = ({ pose }) => {
   const poseIcons: Record<PigPose, string> = {
     "Sider-Left": "◀",
     "Sider-Right": "▶",
-    Razorback: "●",
+    Razorback: "▼",
     Trotter: "▲",
     Snouter: "◆",
     "Leaning Jowler": "★",
@@ -706,10 +706,10 @@ export default function App() {
                           <div className="w-3 h-3 bg-gray-500 rounded-full flex items-center justify-center text-white text-[8px]">▶</div>
                           <span>Sider Right</span>
                         </div>
-                        <div className="flex items-center gap-1">
-                          <div className="w-3 h-3 bg-blue-500 rounded-full flex items-center justify-center text-white text-[8px]">●</div>
-                          <span>Razorback</span>
-                        </div>
+                                                 <div className="flex items-center gap-1">
+                           <div className="w-3 h-3 bg-red-500 rounded-full flex items-center justify-center text-white text-[8px]">▼</div>
+                           <span>Razorback</span>
+                         </div>
                         <div className="flex items-center gap-1">
                           <div className="w-3 h-3 bg-green-500 rounded-full flex items-center justify-center text-white text-[8px]">▲</div>
                           <span>Trotter</span>
