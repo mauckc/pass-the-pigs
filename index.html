@@ -1,0 +1,32 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Pass the Pigs</title>
+    <!-- React + ReactDOM (CDN) -->
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <!-- Babel standalone to compile JSX in the browser -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+      html, body { margin:0; font-family: system-ui, Arial, sans-serif; }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+
+    <!-- Load the JSX file (same folder as index.html) -->
+    <script type="text/babel" data-presets="react"
+            src="./pass_the_pigs_web_game_react_single_file.jsx"></script>
+
+    <!-- If the JSX file does NOT call ReactDOM.createRoot itself,
+         bootstrap it here by rendering <App /> into #root. -->
+    <script type="text/babel">
+      if (window.App) {
+        ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+      }
+      // If the JSX already renders, then remove this bootstrap block.
+    </script>
+  </body>
+</html>
