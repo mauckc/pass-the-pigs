@@ -177,27 +177,37 @@ const randWeighted = (weights: Record<PigPose, number>): PigPose => {
 const triggerConfetti = (pose1: PigPose, pose2: PigPose, enabled: boolean) => {
   if (!enabled) return;
   
+  // Get viewport dimensions for responsive positioning
+  const viewportWidth = window.innerWidth;
+  const viewportHeight = window.innerHeight;
+  const isMobile = viewportWidth < 768; // Tailwind's md breakpoint
+  
+  // Adjust confetti positioning for mobile vs desktop
+  const centerY = isMobile ? 0.5 : 0.6; // More centered on mobile
+  const leftX = isMobile ? 0.3 : 0.2;   // Closer to center on mobile
+  const rightX = isMobile ? 0.7 : 0.8;  // Closer to center on mobile
+  
   // Check for double special poses
   if (pose1 === pose2 && (pose1 === "Razorback" || pose1 === "Trotter" || pose1 === "Snouter")) {
     // Multiple bursts for double specials
     setTimeout(() => confetti({
       particleCount: 150,
       spread: 70,
-      origin: { y: 0.6 },
+      origin: { y: centerY },
       colors: ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7']
     }), 100);
     
     setTimeout(() => confetti({
       particleCount: 100,
       spread: 50,
-      origin: { x: 0.2, y: 0.6 },
+      origin: { x: leftX, y: centerY },
       colors: ['#FF6B6B', '#4ECDC4', '#45B7D1']
     }), 300);
     
     setTimeout(() => confetti({
       particleCount: 100,
       spread: 50,
-      origin: { x: 0.8, y: 0.6 },
+      origin: { x: rightX, y: centerY },
       colors: ['#96CEB4', '#FFEAA7', '#DDA0DD']
     }), 500);
     return;
@@ -209,7 +219,7 @@ const triggerConfetti = (pose1: PigPose, pose2: PigPose, enabled: boolean) => {
     confetti({
       particleCount: 200,
       spread: 80,
-      origin: { y: 0.6 },
+      origin: { y: centerY },
       colors: ['#FFD700', '#FFA500', '#FF6347', '#FF69B4', '#FF1493'],
       shapes: ['star', 'circle'],
       scalar: 1.2
@@ -219,14 +229,59 @@ const triggerConfetti = (pose1: PigPose, pose2: PigPose, enabled: boolean) => {
     setTimeout(() => confetti({
       particleCount: 100,
       spread: 60,
-      origin: { y: 0.4 },
+      origin: { y: centerY - 0.1 }, // Slightly higher
       colors: ['#FFD700', '#FFA500'],
       shapes: ['star']
     }), 200);
     return;
   }
   
-  // No confetti for single Razorback, Trotter, or Snouter - only particles
+  // Individual confetti for single special poses (smaller but scaled by power)
+  const specialPoses = ["Razorback", "Trotter", "Snouter"];
+  const pose1IsSpecial = specialPoses.includes(pose1);
+  const pose2IsSpecial = specialPoses.includes(pose2);
+  
+  if (pose1IsSpecial || pose2IsSpecial) {
+    // Determine the most powerful special pose for confetti intensity
+    const getPosePower = (pose: PigPose) => {
+      switch (pose) {
+        case "Razorback": return 1; // Lowest power
+        case "Trotter": return 2;   // Medium power
+        case "Snouter": return 3;   // Highest power
+        default: return 0;
+      }
+    };
+    
+    const pose1Power = getPosePower(pose1);
+    const pose2Power = getPosePower(pose2);
+    const maxPower = Math.max(pose1Power, pose2Power);
+    
+    // Scale confetti based on power level
+    const baseParticleCount = 30;
+    const particleCount = baseParticleCount + (maxPower * 15); // 30, 45, 60
+    const spread = 40 + (maxPower * 10); // 50, 60, 70
+    const scalar = 0.8 + (maxPower * 0.1); // 0.9, 1.0, 1.1
+    
+    // Color scheme based on the most powerful pose
+    let colors: string[];
+    if (maxPower === 3) { // Snouter
+      colors = ['#8B5CF6', '#A855F7', '#C084FC', '#DDD6FE']; // Purple theme
+    } else if (maxPower === 2) { // Trotter
+      colors = ['#10B981', '#34D399', '#6EE7B7', '#A7F3D0']; // Green theme
+    } else { // Razorback
+      colors = ['#EF4444', '#F87171', '#FCA5A5', '#FECACA']; // Red theme
+    }
+    
+    // Small confetti burst for individual special poses
+    confetti({
+      particleCount,
+      spread,
+      origin: { y: centerY },
+      colors,
+      scalar,
+      shapes: ['circle']
+    });
+  }
 };
 
 const poseLabelShort: Record<PigPose, string> = {
