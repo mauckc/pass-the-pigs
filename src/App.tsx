@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -290,6 +290,13 @@ function useLocalState<T>(key: string, initial: T) {
 }
 
 const PigEmoji: React.FC<{ pose: PigPose; i: number; rolling?: boolean; anticipating?: boolean; showBadge?: boolean; fastRollMode?: boolean }> = ({ pose, i, rolling, anticipating, showBadge = false, fastRollMode = false }) => {
+  const previousPoseRef = useRef(pose);
+  
+  // Update previous pose when not rolling
+  if (!rolling && !anticipating) {
+    previousPoseRef.current = pose;
+  }
+
   const variants: Record<PigPose, { rotate: number; y: number; x: number; scale?: number }> = {
     "Sider-Left": { rotate: -90, y: 8, x: -10 },
     "Sider-Right": { rotate: 90, y: 8, x: 10 },
@@ -319,7 +326,8 @@ const PigEmoji: React.FC<{ pose: PigPose; i: number; rolling?: boolean; anticipa
     "Leaning Jowler": "★",
   };
 
-  const v = variants[pose];
+  const currentV = variants[pose];
+  const previousV = variants[previousPoseRef.current];
   const colors = poseColors[pose];
   const indicator = poseIndicators[pose];
 
@@ -328,30 +336,35 @@ const PigEmoji: React.FC<{ pose: PigPose; i: number; rolling?: boolean; anticipa
       className="relative text-6xl select-none"
       initial={{ y: -60, rotate: (i ? -1 : 1) * 45, opacity: 0.2 }}
       animate={rolling ? { 
-        y: [0, -35, 20, -15, 10, -5, 0], 
-        rotate: [0, 90, -45, 135, -30, 45, 0], 
-        scale: [1, 1.1, 0.9, 1.05, 0.95, 1.02, 1],
-        x: [0, i ? 8 : -8, i ? -6 : 6, i ? 5 : -5, i ? -3 : 3, i ? 2 : -2, 0],
-        opacity: [1, 0.8, 0.2, 0.8, 0.9, 0.95, 1],
+        y: [previousV.y, previousV.y * 0.7, previousV.y * 0.3, 0, -35, 20, -15, 10, -5, currentV.y], 
+        rotate: [previousV.rotate, previousV.rotate * 0.7, previousV.rotate * 0.3, 0, 90, -45, 135, -30, 45, currentV.rotate], 
+        scale: [previousV.scale || 1, (previousV.scale || 1) * 0.9 + 0.1, (previousV.scale || 1) * 0.6 + 0.4, 1, 1.1, 0.9, 1.05, 0.95, 1.02, currentV.scale || 1],
+        x: [previousV.x, previousV.x * 0.7, previousV.x * 0.3, 0, i ? 8 : -8, i ? -6 : 6, i ? 5 : -5, i ? -3 : 3, i ? 2 : -2, currentV.x],
+        opacity: [1, 1, 1, 1, 0.8, 0.2, 0.8, 0.9, 0.95, 1],
         filter: [
           "drop-shadow(0 0 0 rgba(0,0,0,0))", 
+          "drop-shadow(0 0 0 rgba(0,0,0,0))",
+          "drop-shadow(0 0 0 rgba(0,0,0,0))",
+          "drop-shadow(0 0 0 rgba(0,0,0,0))",
           "drop-shadow(0 4px 8px rgba(0,0,0,0.3))", 
           "drop-shadow(0 2px 4px rgba(0,0,0,0.2))",
           "drop-shadow(0 1px 2px rgba(0,0,0,0.1))",
           "drop-shadow(0 0 0 rgba(0,0,0,0))"
         ],
-        skewX: [0, 2, -2, 1, -1, 0.5, 0],
-        skewY: [0, 1, -1, 0.5, -0.5, 0, 0]
+        skewX: [0, 0, 0, 0, 2, -2, 1, -1, 0.5, 0],
+        skewY: [0, 0, 0, 0, 1, -1, 0.5, -0.5, 0, 0]
       } : anticipating ? {
-        y: [0, -5, 0],
-        rotate: [0, 3, -3, 0],
-        scale: [1, 1.05, 1],
-        x: [0, i ? 2 : -2, 0]
-      } : { ...v, opacity: 1 }}
+        y: [previousV.y, 0, -5, 0],
+        rotate: [previousV.rotate, 0, 3, -3, 0],
+        scale: [previousV.scale || 1, 1, 1.05, 1],
+        x: [previousV.x, 0, i ? 2 : -2, 0],
+        opacity: 1
+      } : { ...currentV, opacity: 1 }}
+      layout={false}
       transition={{ 
         duration: rolling ? (fastRollMode ? 0.9 : 1.8) : anticipating ? (fastRollMode ? 0.15 : 0.3) : 0.35, 
-        ease: rolling ? "easeInOut" : anticipating ? "easeInOut" : "easeOut",
-        times: rolling ? [0, 0.2, 0.4, 0.6, 0.75, 0.9, 1] : undefined,
+        ease: rolling ? [0.25, 0.1, 0.25, 1] : anticipating ? "easeInOut" : "easeOut",
+        times: rolling ? [0, 0.08, 0.15, 0.25, 0.4, 0.6, 0.8, 0.92, 0.98, 1] : undefined,
         repeat: anticipating ? Infinity : undefined,
         repeatType: anticipating ? "reverse" : undefined
       }}
@@ -459,7 +472,7 @@ function runInternalTests() {
 
 // ScoreHistory component to display player scores over turns/rounds
 const ScoreHistory: React.FC<{ scoreHistory: ScoreEntry[]; players: Player[] }> = ({ scoreHistory, players }) => {
-  if (scoreHistory.length === 0) {
+  if (!scoreHistory || scoreHistory.length === 0) {
     return (
       <Card>
         <CardHeader>
@@ -479,7 +492,7 @@ const ScoreHistory: React.FC<{ scoreHistory: ScoreEntry[]; players: Player[] }> 
   }
 
   // Group score entries by turn number
-  const turnsByNumber = scoreHistory.reduce((acc, entry) => {
+  const turnsByNumber = (scoreHistory || []).reduce((acc, entry) => {
     if (!acc[entry.turnNumber]) {
       acc[entry.turnNumber] = [];
     }
@@ -495,9 +508,9 @@ const ScoreHistory: React.FC<{ scoreHistory: ScoreEntry[]; players: Player[] }> 
         <CardTitle className="flex items-center gap-2">
           <Trophy className="h-5 w-5" />
           Score History
-          <Badge variant="secondary" className="ml-2">
-            {scoreHistory.length} change{scoreHistory.length === 1 ? '' : 's'}
-          </Badge>
+                     <Badge variant="secondary" className="ml-2">
+             {scoreHistory?.length || 0} change{(scoreHistory?.length || 0) === 1 ? '' : 's'}
+           </Badge>
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -568,13 +581,13 @@ const ScoreHistory: React.FC<{ scoreHistory: ScoreEntry[]; players: Player[] }> 
           })}
         </div>
         
-        {scoreHistory.length > 0 && (
-          <div className="mt-4 pt-3 border-t">
-            <div className="text-xs text-muted-foreground text-center">
-              Showing {scoreHistory.length} score change{scoreHistory.length === 1 ? '' : 's'} across {turnNumbers.length} turn{turnNumbers.length === 1 ? '' : 's'}
-            </div>
-          </div>
-        )}
+                 {(scoreHistory?.length || 0) > 0 && (
+           <div className="mt-4 pt-3 border-t">
+             <div className="text-xs text-muted-foreground text-center">
+               Showing {scoreHistory?.length || 0} score change{(scoreHistory?.length || 0) === 1 ? '' : 's'} across {turnNumbers.length} turn{turnNumbers.length === 1 ? '' : 's'}
+             </div>
+           </div>
+         )}
       </CardContent>
     </Card>
   );
@@ -1131,10 +1144,26 @@ export default function App() {
                           )}
                         </div>
                        
-                       <div className="flex items-center justify-center gap-8 h-44">
-                         <PigEmoji pose={state.history[state.history.length - 1]?.pigs[0]?.pose ?? "Sider-Left"} i={0} rolling={rolling} anticipating={anticipating} showBadge={state.settings.showPoseBadges} fastRollMode={state.settings.fastRollMode} />
-                         <PigEmoji pose={state.history[state.history.length - 1]?.pigs[1]?.pose ?? "Sider-Right"} i={1} rolling={rolling} anticipating={anticipating} showBadge={state.settings.showPoseBadges} fastRollMode={state.settings.fastRollMode} />
-                       </div>
+                                                <div className="flex items-center justify-center gap-8 h-44">
+                          <PigEmoji 
+                            key={`pig-0`}
+                            pose={state.history[state.history.length - 1]?.pigs[0]?.pose ?? "Sider-Left"} 
+                            i={0} 
+                            rolling={rolling} 
+                            anticipating={anticipating} 
+                            showBadge={state.settings.showPoseBadges} 
+                            fastRollMode={state.settings.fastRollMode}
+                          />
+                          <PigEmoji 
+                            key={`pig-1`}
+                            pose={state.history[state.history.length - 1]?.pigs[1]?.pose ?? "Sider-Right"} 
+                            i={1} 
+                            rolling={rolling} 
+                            anticipating={anticipating} 
+                            showBadge={state.settings.showPoseBadges} 
+                            fastRollMode={state.settings.fastRollMode}
+                          />
+                         </div>
                       
                       {/* Pose Legend */}
                       {state.settings.showPoseBadges && (
