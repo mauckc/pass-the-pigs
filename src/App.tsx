@@ -46,6 +46,7 @@ type GameState = {
     confettiOnWin: boolean;
     confettiOnSpecialRolls: boolean;
     showRollHints: boolean;
+    soundEffects: boolean;
   };
   // Final-round state
   finalRound: boolean; // true once someone Holds >= target
@@ -79,6 +80,72 @@ const DEFAULT_WEIGHTS: Record<PigPose, number> = {
 // Local storage key
 const STORAGE_KEY = "pass-the-pigs-v1";
 
+// Sound effects using Web Audio API
+const createSound = (frequency: number, duration: number, type: OscillatorType = 'sine') => {
+  const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+  const oscillator = audioContext.createOscillator();
+  const gainNode = audioContext.createGain();
+  
+  oscillator.connect(gainNode);
+  gainNode.connect(audioContext.destination);
+  
+  oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
+  oscillator.type = type;
+  
+  gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+  gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
+  
+  oscillator.start(audioContext.currentTime);
+  oscillator.stop(audioContext.currentTime + duration);
+};
+
+const playRollSound = () => {
+  // Rolling sound - multiple frequencies
+  createSound(200, 0.1, 'sawtooth');
+  setTimeout(() => createSound(300, 0.1, 'sawtooth'), 50);
+  setTimeout(() => createSound(400, 0.1, 'sawtooth'), 100);
+  setTimeout(() => createSound(500, 0.1, 'sawtooth'), 150);
+};
+
+const playLandingSound = () => {
+  // Landing sound - quick burst
+  createSound(600, 0.05, 'square');
+  setTimeout(() => createSound(400, 0.1, 'sine'), 20);
+};
+
+const playSpecialSound = () => {
+  // Special roll sound - ascending notes
+  createSound(440, 0.1, 'sine'); // A4
+  setTimeout(() => createSound(554, 0.1, 'sine'), 100); // C#5
+  setTimeout(() => createSound(659, 0.1, 'sine'), 200); // E5
+  setTimeout(() => createSound(880, 0.2, 'sine'), 300); // A5
+};
+
+const playPigOutSound = () => {
+  // Pig out sound - descending notes
+  createSound(440, 0.1, 'sine'); // A4
+  setTimeout(() => createSound(392, 0.1, 'sine'), 100); // G4
+  setTimeout(() => createSound(349, 0.1, 'sine'), 200); // F4
+  setTimeout(() => createSound(294, 0.2, 'sine'), 300); // D4
+};
+
+// Particle effect system
+const createParticles = (count: number, x: number, y: number, colors: string[]) => {
+  const newParticles = [];
+  for (let i = 0; i < count; i++) {
+    newParticles.push({
+      id: Math.random(),
+      x: x + (Math.random() - 0.5) * 20,
+      y: y + (Math.random() - 0.5) * 20,
+      vx: (Math.random() - 0.5) * 8,
+      vy: (Math.random() - 0.5) * 8 - 2,
+      life: 1,
+      color: colors[Math.floor(Math.random() * colors.length)]
+    });
+  }
+  return newParticles;
+};
+
 // Helpers
 const randWeighted = (weights: Record<PigPose, number>): PigPose => {
   const entries = Object.entries(weights) as [PigPose, number][];
@@ -97,24 +164,54 @@ const triggerConfetti = (pose1: PigPose, pose2: PigPose, enabled: boolean) => {
   
   // Check for double special poses
   if (pose1 === pose2 && (pose1 === "Razorback" || pose1 === "Trotter" || pose1 === "Snouter")) {
-    confetti({
-      particleCount: 100,
+    // Multiple bursts for double specials
+    setTimeout(() => confetti({
+      particleCount: 150,
       spread: 70,
-      origin: { y: 0.6 }
-    });
+      origin: { y: 0.6 },
+      colors: ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7']
+    }), 100);
+    
+    setTimeout(() => confetti({
+      particleCount: 100,
+      spread: 50,
+      origin: { x: 0.2, y: 0.6 },
+      colors: ['#FF6B6B', '#4ECDC4', '#45B7D1']
+    }), 300);
+    
+    setTimeout(() => confetti({
+      particleCount: 100,
+      spread: 50,
+      origin: { x: 0.8, y: 0.6 },
+      colors: ['#96CEB4', '#FFEAA7', '#DDA0DD']
+    }), 500);
     return;
   }
   
   // Check for any Leaning Jowler
   if (pose1 === "Leaning Jowler" || pose2 === "Leaning Jowler") {
+    // Golden shower for Leaning Jowler
     confetti({
-      particleCount: 80,
-      spread: 60,
+      particleCount: 200,
+      spread: 80,
       origin: { y: 0.6 },
-      colors: ['#FFD700', '#FFA500', '#FF6347', '#FF69B4']
+      colors: ['#FFD700', '#FFA500', '#FF6347', '#FF69B4', '#FF1493'],
+      shapes: ['star', 'circle'],
+      scalar: 1.2
     });
+    
+    // Additional burst
+    setTimeout(() => confetti({
+      particleCount: 100,
+      spread: 60,
+      origin: { y: 0.4 },
+      colors: ['#FFD700', '#FFA500'],
+      shapes: ['star']
+    }), 200);
     return;
   }
+  
+  // No confetti for single Razorback, Trotter, or Snouter - only particles
 };
 
 const poseLabelShort: Record<PigPose, string> = {
@@ -177,7 +274,7 @@ function useLocalState<T>(key: string, initial: T) {
   return [value, setValue] as const;
 }
 
-const PigEmoji: React.FC<{ pose: PigPose; i: number; rolling?: boolean }> = ({ pose, i, rolling }) => {
+const PigEmoji: React.FC<{ pose: PigPose; i: number; rolling?: boolean; anticipating?: boolean }> = ({ pose, i, rolling, anticipating }) => {
   const variants: Record<PigPose, { rotate: number; y: number; x: number; scale?: number }> = {
     "Sider-Left": { rotate: -90, y: 8, x: -10 },
     "Sider-Right": { rotate: 90, y: 8, x: 10 },
@@ -214,22 +311,36 @@ const PigEmoji: React.FC<{ pose: PigPose; i: number; rolling?: boolean }> = ({ p
   return (
     <motion.div
       className="relative text-6xl select-none"
-      initial={{ y: -60, rotate: (i ? -1 : 1) * 45, opacity: 0 }}
+      initial={{ y: -60, rotate: (i ? -1 : 1) * 45, opacity: 0.2 }}
       animate={rolling ? { 
-        y: [0, -40, 20, -15, 0], 
-        rotate: [0, 45, -30, 25, -15, 0], 
-        scale: [1, 1.1, 0.9, 1.05, 1],
-        x: [0, i ? 8 : -8, i ? -6 : 6, i ? 4 : -4, 0],
-        opacity: 1,
-        filter: ["drop-shadow(0 0 0 rgba(0,0,0,0))", "drop-shadow(0 4px 8px rgba(0,0,0,0.3))", "drop-shadow(0 0 0 rgba(0,0,0,0))"],
-        skewX: [0, 2, -2, 1, -1, 0]
+        y: [0, -35, 20, -15, 10, -5, 0], 
+        rotate: [0, 90, -45, 135, -30, 45, 0], 
+        scale: [1, 1.1, 0.9, 1.05, 0.95, 1.02, 1],
+        x: [0, i ? 8 : -8, i ? -6 : 6, i ? 5 : -5, i ? -3 : 3, i ? 2 : -2, 0],
+        opacity: [1, 0.8, 0.2, 0.8, 0.9, 0.95, 1],
+        filter: [
+          "drop-shadow(0 0 0 rgba(0,0,0,0))", 
+          "drop-shadow(0 4px 8px rgba(0,0,0,0.3))", 
+          "drop-shadow(0 2px 4px rgba(0,0,0,0.2))",
+          "drop-shadow(0 1px 2px rgba(0,0,0,0.1))",
+          "drop-shadow(0 0 0 rgba(0,0,0,0))"
+        ],
+        skewX: [0, 2, -2, 1, -1, 0.5, 0],
+        skewY: [0, 1, -1, 0.5, -0.5, 0, 0]
+      } : anticipating ? {
+        y: [0, -5, 0],
+        rotate: [0, 3, -3, 0],
+        scale: [1, 1.05, 1],
+        x: [0, i ? 2 : -2, 0]
       } : { ...v, opacity: 1 }}
       transition={{ 
-        duration: rolling ? 0.8 : 0.35, 
-        ease: rolling ? "easeInOut" : "easeOut",
-        times: rolling ? [0, 0.2, 0.4, 0.6, 0.8, 1] : undefined
+        duration: rolling ? 1.8 : anticipating ? 0.3 : 0.35, 
+        ease: rolling ? "easeInOut" : anticipating ? "easeInOut" : "easeOut",
+        times: rolling ? [0, 0.2, 0.4, 0.6, 0.75, 0.9, 1] : undefined,
+        repeat: anticipating ? Infinity : undefined,
+        repeatType: anticipating ? "reverse" : undefined
       }}
-      whileHover={rolling ? {} : { scale: 1.05, transition: { duration: 0.1 } }}
+      whileHover={rolling || anticipating ? {} : { scale: 1.05, transition: { duration: 0.1 } }}
     >
       {/* Pose indicator badge - only show when not rolling, always at top */}
       {!rolling && (
@@ -245,20 +356,43 @@ const PigEmoji: React.FC<{ pose: PigPose; i: number; rolling?: boolean }> = ({ p
         </div>
       )}
       
-      {/* Main pig emoji */}
+      {/* Main pig emoji with enhanced rolling animation */}
       <motion.div 
         className="relative"
         animate={rolling ? {
-          y: [0, -2, 0],
-          rotate: [0, 2, -2, 0]
+          y: [0, -3, 0],
+          rotate: [0, 5, -5, 0],
+          scale: [1, 1.02, 0.98, 1]
         } : {}}
         transition={rolling ? {
-          duration: 0.3,
-          ease: "easeInOut"
+          duration: 0.4,
+          ease: "easeInOut",
+          repeat: 3,
+          repeatType: "reverse"
         } : {}}
       >
         🐖
       </motion.div>
+      
+      {/* Rolling trail effect */}
+      {rolling && (
+        <motion.div
+          className="absolute inset-0 text-6xl opacity-15"
+          animate={{
+            y: [0, -15, 0],
+            rotate: [0, 180],
+            scale: [1, 0.9, 1]
+          }}
+          transition={{
+            duration: 0.9,
+            ease: "easeInOut",
+            repeat: 2,
+            repeatType: "reverse"
+          }}
+        >
+          🐖
+        </motion.div>
+      )}
     </motion.div>
   );
 };
@@ -327,6 +461,7 @@ export default function App() {
       confettiOnWin: true,
       confettiOnSpecialRolls: true,
       showRollHints: true,
+      soundEffects: true,
     },
     finalRound: false,
     finalLeaderIndex: null,
@@ -337,10 +472,33 @@ export default function App() {
 
   const [state, setState] = useLocalState<GameState>(STORAGE_KEY, defaultState);
   const [rolling, setRolling] = useState(false);
+  const [anticipating, setAnticipating] = useState(false);
+  const [particles, setParticles] = useState<Array<{ id: number; x: number; y: number; vx: number; vy: number; life: number; color: string }>>([]);
 
   useEffect(() => {
     runInternalTests();
   }, []);
+
+  // Particle animation effect
+  useEffect(() => {
+    if (particles.length === 0) return;
+    
+    const interval = setInterval(() => {
+      setParticles(prev => 
+        prev
+          .map(p => ({
+            ...p,
+            x: p.x + p.vx,
+            y: p.y + p.vy,
+            vy: p.vy + 0.2, // gravity
+            life: p.life - 0.02
+          }))
+          .filter(p => p.life > 0)
+      );
+    }, 16); // ~60fps
+    
+    return () => clearInterval(interval);
+  }, [particles.length]);
 
   const finalDone = Boolean(
     state.finalRound && state.finalTurns && Object.values(state.finalTurns).every(Boolean)
@@ -370,13 +528,53 @@ export default function App() {
 
   const roll = async () => {
     if (rolling || winner) return;
+    
+    // Start anticipation phase
+    setAnticipating(true);
+    await new Promise((r) => setTimeout(r, 300));
+    
+    // Start rolling phase
+    setAnticipating(false);
     setRolling(true);
-    await new Promise((r) => setTimeout(r, 450));
+    
+    // Play rolling sound
+    if (state.settings.soundEffects) {
+      playRollSound();
+    }
+    
+    // Add rolling delay
+    await new Promise((r) => setTimeout(r, 1200));
+    
     const a = randWeighted(state.settings.weights);
     const b = randWeighted(state.settings.weights);
     const { points, event } = scorePair(a, b);
 
-    // Trigger confetti for special combinations
+    // Play landing sound
+    if (state.settings.soundEffects) {
+      playLandingSound();
+    }
+
+    // Play special sounds and trigger confetti for special combinations
+    const pigOut = event.startsWith("Pig Out");
+    const isSpecial = points > 5 || (a === b && a !== "Sider-Left" && a !== "Sider-Right");
+    
+    if (state.settings.soundEffects) {
+      if (pigOut) {
+        playPigOutSound();
+      } else if (isSpecial) {
+        playSpecialSound();
+      }
+    }
+
+    // Add particle effects for special rolls
+    if (isSpecial) {
+      const newParticles = createParticles(15, 400, 200, ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7']);
+      setParticles(prev => [...prev, ...newParticles]);
+    } else if (pigOut) {
+      const newParticles = createParticles(10, 400, 200, ['#E74C3C', '#C0392B', '#8E44AD']);
+      setParticles(prev => [...prev, ...newParticles]);
+    }
+
     triggerConfetti(a, b, state.settings.confettiOnSpecialRolls);
 
     setState((s) => {
@@ -384,7 +582,6 @@ export default function App() {
         ...s.history,
         { pigs: [{ pose: a }, { pose: b }] as [DiePig, DiePig], points, event },
       ];
-      const pigOut = event.startsWith("Pig Out");
       if (!pigOut) {
         return { ...s, history: newHistory, turnPoints: s.turnPoints + points };
       }
@@ -593,6 +790,13 @@ export default function App() {
                     onCheckedChange={(v) => setState((s) => ({ ...s, settings: { ...s.settings, showRollHints: v } }))}
                   />
                 </div>
+                <div className="flex items-center justify-between">
+                  <Label>Sound effects</Label>
+                  <Switch
+                    checked={state.settings.soundEffects}
+                    onCheckedChange={(v) => setState((s) => ({ ...s, settings: { ...s.settings, soundEffects: v } }))}
+                  />
+                </div>
                 <Separator />
                 <div>
                   <div className="font-semibold mb-2">Outcome Weights</div>
@@ -689,6 +893,23 @@ export default function App() {
                     <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-inner border relative overflow-hidden">
                        <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: "radial-gradient(circle at 20% 20%, rgba(0,0,0,0.04), transparent 45%), radial-gradient(circle at 80% 50%, rgba(0,0,0,0.03), transparent 35%)" }} />
                        
+                       {/* Particle effects */}
+                       {particles.map(particle => (
+                         <motion.div
+                           key={particle.id}
+                           className="absolute w-2 h-2 rounded-full pointer-events-none"
+                           style={{
+                             left: particle.x,
+                             top: particle.y,
+                             backgroundColor: particle.color,
+                             opacity: particle.life
+                           }}
+                           initial={{ scale: 0 }}
+                           animate={{ scale: particle.life }}
+                           transition={{ duration: 0.1 }}
+                         />
+                       ))}
+                       
                                                {/* Roll Result Display - Always takes same space */}
                         <div className="text-center mb-4 h-20 flex items-center justify-center">
                           {state.history.length > 0 && !rolling ? (
@@ -715,8 +936,8 @@ export default function App() {
                         </div>
                        
                        <div className="flex items-center justify-center gap-8 h-44">
-                         <PigEmoji pose={state.history[state.history.length - 1]?.pigs[0]?.pose ?? "Sider-Left"} i={0} rolling={rolling} />
-                         <PigEmoji pose={state.history[state.history.length - 1]?.pigs[1]?.pose ?? "Sider-Right"} i={1} rolling={rolling} />
+                         <PigEmoji pose={state.history[state.history.length - 1]?.pigs[0]?.pose ?? "Sider-Left"} i={0} rolling={rolling} anticipating={anticipating} />
+                         <PigEmoji pose={state.history[state.history.length - 1]?.pigs[1]?.pose ?? "Sider-Right"} i={1} rolling={rolling} anticipating={anticipating} />
                        </div>
                       
                       {/* Pose Legend */}
@@ -774,7 +995,14 @@ export default function App() {
                               whileHover={{ scale: 1.05 }}
                               whileTap={{ scale: 0.95 }}
                             >
-                              <Button size="lg" onClick={roll} disabled={rolling} className="px-8">Roll</Button>
+                              <Button 
+                                size="lg" 
+                                onClick={roll} 
+                                disabled={rolling || anticipating} 
+                                className={`px-8 ${anticipating ? 'bg-yellow-500 hover:bg-yellow-600' : ''}`}
+                              >
+                                {anticipating ? "..." : rolling ? "Rolling..." : "Roll"}
+                              </Button>
                             </motion.div>
                             <motion.div
                               whileHover={{ scale: 1.05 }}
@@ -789,6 +1017,10 @@ export default function App() {
                         <div className="mt-3 text-center text-xs text-muted-foreground px-2">
                           {state.needsToPassPigs 
                             ? "You got Pig Out! Click 'Pass the Pigs' to end your turn."
+                            : anticipating
+                            ? "Get ready..."
+                            : rolling
+                            ? "The pigs are tumbling!"
                             : "Rolling risks a Pig Out (opposite sides) that requires you to pass the pigs."
                           }
                         </div>
