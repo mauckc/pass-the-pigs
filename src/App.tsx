@@ -271,12 +271,32 @@ function scorePair(a: PigPose, b: PigPose): { points: number; event: string } {
   return { points: sum, event: `${a} + ${b} (+${sum})` };
 }
 
-// Persisted state hook
+// Persisted state hook with migration support
 function useLocalState<T>(key: string, initial: T) {
   const [value, setValue] = useState<T>(() => {
     try {
       const raw = localStorage.getItem(key);
-      return raw ? (JSON.parse(raw) as T) : initial;
+      if (!raw) return initial;
+      
+      const parsed = JSON.parse(raw) as any;
+      
+      // Migration logic for existing saved games
+      if (parsed && typeof parsed === 'object') {
+        // Add missing scoreHistory field if it doesn't exist
+        if (!parsed.scoreHistory) {
+          parsed.scoreHistory = [];
+        }
+        // Add missing currentTurnNumber field if it doesn't exist
+        if (typeof parsed.currentTurnNumber !== 'number') {
+          parsed.currentTurnNumber = 1;
+        }
+        // Add missing fastRollMode field if it doesn't exist
+        if (parsed.settings && typeof parsed.settings.fastRollMode !== 'boolean') {
+          parsed.settings.fastRollMode = false;
+        }
+      }
+      
+      return parsed as T;
     } catch {
       return initial;
     }
@@ -491,8 +511,13 @@ const ScoreHistory: React.FC<{ scoreHistory: ScoreEntry[]; players: Player[] }> 
     );
   }
 
-  // Group score entries by turn number
+  // Group score entries by turn number with safety checks
   const turnsByNumber = (scoreHistory || []).reduce((acc, entry) => {
+    // Safety check: ensure entry is valid and has required properties
+    if (!entry || typeof entry.turnNumber !== 'number' || !entry.playerId) {
+      return acc;
+    }
+    
     if (!acc[entry.turnNumber]) {
       acc[entry.turnNumber] = [];
     }
@@ -538,7 +563,8 @@ const ScoreHistory: React.FC<{ scoreHistory: ScoreEntry[]; players: Player[] }> 
                 
                 <div className="space-y-2">
                   {turnEntries
-                    .sort((a, b) => a.timestamp - b.timestamp)
+                    .filter(entry => entry && entry.playerId && typeof entry.pointsEarned === 'number') // Safety filter
+                    .sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0))
                     .map((entry, idx) => {
                       const player = players.find(p => p.id === entry.playerId);
                       const isPositive = entry.pointsEarned > 0;
