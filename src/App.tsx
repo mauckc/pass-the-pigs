@@ -47,6 +47,7 @@ type GameState = {
     confettiOnSpecialRolls: boolean;
     showRollHints: boolean;
     soundEffects: boolean;
+    showPoseBadges: boolean;
   };
   // Final-round state
   finalRound: boolean; // true once someone Holds >= target
@@ -274,7 +275,7 @@ function useLocalState<T>(key: string, initial: T) {
   return [value, setValue] as const;
 }
 
-const PigEmoji: React.FC<{ pose: PigPose; i: number; rolling?: boolean; anticipating?: boolean }> = ({ pose, i, rolling, anticipating }) => {
+const PigEmoji: React.FC<{ pose: PigPose; i: number; rolling?: boolean; anticipating?: boolean; showBadge?: boolean }> = ({ pose, i, rolling, anticipating, showBadge = false }) => {
   const variants: Record<PigPose, { rotate: number; y: number; x: number; scale?: number }> = {
     "Sider-Left": { rotate: -90, y: 8, x: -10 },
     "Sider-Right": { rotate: 90, y: 8, x: 10 },
@@ -342,8 +343,8 @@ const PigEmoji: React.FC<{ pose: PigPose; i: number; rolling?: boolean; anticipa
       }}
       whileHover={rolling || anticipating ? {} : { scale: 1.05, transition: { duration: 0.1 } }}
     >
-      {/* Pose indicator badge - only show when not rolling, always at top */}
-      {!rolling && (
+      {/* Pose indicator badge - only show when not rolling and showBadge is true */}
+      {!rolling && showBadge && (
         <div 
           className={`absolute w-4 h-4 rounded-full ${colors.indicator} bg-opacity-70 text-white text-[8px] flex items-center justify-center font-medium z-10`}
           style={{
@@ -462,6 +463,7 @@ export default function App() {
       confettiOnSpecialRolls: true,
       showRollHints: true,
       soundEffects: true,
+      showPoseBadges: false,
     },
     finalRound: false,
     finalLeaderIndex: null,
@@ -797,6 +799,13 @@ export default function App() {
                     onCheckedChange={(v) => setState((s) => ({ ...s, settings: { ...s.settings, soundEffects: v } }))}
                   />
                 </div>
+                <div className="flex items-center justify-between">
+                  <Label>Show pose badges</Label>
+                  <Switch
+                    checked={state.settings.showPoseBadges}
+                    onCheckedChange={(v) => setState((s) => ({ ...s, settings: { ...s.settings, showPoseBadges: v } }))}
+                  />
+                </div>
                 <Separator />
                 <div>
                   <div className="font-semibold mb-2">Outcome Weights</div>
@@ -936,37 +945,39 @@ export default function App() {
                         </div>
                        
                        <div className="flex items-center justify-center gap-8 h-44">
-                         <PigEmoji pose={state.history[state.history.length - 1]?.pigs[0]?.pose ?? "Sider-Left"} i={0} rolling={rolling} anticipating={anticipating} />
-                         <PigEmoji pose={state.history[state.history.length - 1]?.pigs[1]?.pose ?? "Sider-Right"} i={1} rolling={rolling} anticipating={anticipating} />
+                         <PigEmoji pose={state.history[state.history.length - 1]?.pigs[0]?.pose ?? "Sider-Left"} i={0} rolling={rolling} anticipating={anticipating} showBadge={state.settings.showPoseBadges} />
+                         <PigEmoji pose={state.history[state.history.length - 1]?.pigs[1]?.pose ?? "Sider-Right"} i={1} rolling={rolling} anticipating={anticipating} showBadge={state.settings.showPoseBadges} />
                        </div>
                       
                       {/* Pose Legend */}
-                      <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
-                        <div className="flex items-center gap-1">
-                          <div className="w-3 h-3 bg-gray-500 rounded-full flex items-center justify-center text-white text-[8px]">◀</div>
-                          <span className="break-words">Sider Left</span>
+                      {state.settings.showPoseBadges && (
+                        <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
+                          <div className="flex items-center gap-1">
+                            <div className="w-3 h-3 bg-gray-500 rounded-full flex items-center justify-center text-white text-[8px]">◀</div>
+                            <span className="break-words">Sider Left</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <div className="w-3 h-3 bg-gray-500 rounded-full flex items-center justify-center text-white text-[8px]">▶</div>
+                            <span className="break-words">Sider Right</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <div className="w-3 h-3 bg-red-500 rounded-full flex items-center justify-center text-white text-[8px]">▼</div>
+                            <span className="break-words">Razorback</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <div className="w-3 h-3 bg-green-500 rounded-full flex items-center justify-center text-white text-[8px]">▲</div>
+                            <span className="break-words">Trotter</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <div className="w-3 h-3 bg-purple-500 rounded-full flex items-center justify-center text-white text-[8px]">◆</div>
+                            <span className="break-words">Snouter</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <div className="w-3 h-3 bg-orange-500 rounded-full flex items-center justify-center text-white text-[8px]">★</div>
+                            <span className="break-words">Leaning Jowler</span>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-1">
-                          <div className="w-3 h-3 bg-gray-500 rounded-full flex items-center justify-center text-white text-[8px]">▶</div>
-                          <span className="break-words">Sider Right</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <div className="w-3 h-3 bg-red-500 rounded-full flex items-center justify-center text-white text-[8px]">▼</div>
-                          <span className="break-words">Razorback</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <div className="w-3 h-3 bg-green-500 rounded-full flex items-center justify-center text-white text-[8px]">▲</div>
-                          <span className="break-words">Trotter</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <div className="w-3 h-3 bg-purple-500 rounded-full flex items-center justify-center text-white text-[8px]">◆</div>
-                          <span className="break-words">Snouter</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <div className="w-3 h-3 bg-orange-500 rounded-full flex items-center justify-center text-white text-[8px]">★</div>
-                          <span className="break-words">Leaning Jowler</span>
-                        </div>
-                      </div>
+                      )}
                       <div className="mt-4 text-center">
                         <div className="text-sm text-muted-foreground">Turn Points</div>
                         <motion.div 
