@@ -356,10 +356,10 @@ const PigEmoji: React.FC<{ pose: PigPose; i: number; rolling?: boolean; anticipa
       className="relative text-6xl select-none"
       initial={{ y: -60, rotate: (i ? -1 : 1) * 45, opacity: 0.2 }}
       animate={rolling ? { 
-        y: [previousV.y, previousV.y * 0.7, previousV.y * 0.3, 0, -35, 20, -15, 10, -5, currentV.y], 
-        rotate: [previousV.rotate, previousV.rotate * 0.7, previousV.rotate * 0.3, 0, 90, -45, 135, -30, 45, currentV.rotate], 
-        scale: [previousV.scale || 1, (previousV.scale || 1) * 0.9 + 0.1, (previousV.scale || 1) * 0.6 + 0.4, 1, 1.1, 0.9, 1.05, 0.95, 1.02, currentV.scale || 1],
-        x: [previousV.x, previousV.x * 0.7, previousV.x * 0.3, 0, i ? 8 : -8, i ? -6 : 6, i ? 5 : -5, i ? -3 : 3, i ? 2 : -2, currentV.x],
+        y: [0, 0, 0, 0, -35, 20, -15, 10, -5, currentV.y], 
+        rotate: [0, 0, 0, 0, 90, -45, 135, -30, 45, currentV.rotate], 
+        scale: [1, 1, 1, 1, 1.1, 0.9, 1.05, 0.95, 1.02, currentV.scale || 1],
+        x: [0, 0, 0, 0, i ? 8 : -8, i ? -6 : 6, i ? 5 : -5, i ? -3 : 3, i ? 2 : -2, currentV.x],
         opacity: [1, 1, 1, 1, 0.8, 0.2, 0.8, 0.9, 0.95, 1],
         filter: [
           "drop-shadow(0 0 0 rgba(0,0,0,0))", 
