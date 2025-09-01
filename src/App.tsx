@@ -257,10 +257,10 @@ const triggerConfetti = (pose1: PigPose, pose2: PigPose, enabled: boolean) => {
     const maxPower = Math.max(pose1Power, pose2Power);
     
     // Scale confetti based on power level
-    const baseParticleCount = 30;
-    const particleCount = baseParticleCount + (maxPower * 15); // 30, 45, 60
-    const spread = 40 + (maxPower * 10); // 50, 60, 70
-    const scalar = 0.8 + (maxPower * 0.1); // 0.9, 1.0, 1.1
+    const baseParticleCount = 15;
+    const particleCount = baseParticleCount + (maxPower * 5); // 15, 20, 30
+    const spread = 40 + (maxPower * 10); // 40, 50, 60
+    const scalar = 0.8 + (maxPower * 0.1); // 0.8, 0.9, 1.0
     
     // Color scheme based on the most powerful pose
     let colors: string[];
