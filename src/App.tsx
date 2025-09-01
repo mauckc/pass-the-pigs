@@ -34,6 +34,17 @@ export type Roll = {
 
 type Player = { id: string; name: string; score: number };
 
+type ScoreEntry = {
+  playerId: string;
+  playerName: string;
+  turnNumber: number;
+  previousScore: number;
+  newScore: number;
+  pointsEarned: number;
+  action: 'hold' | 'pass_pigs';
+  timestamp: number;
+};
+
 type GameState = {
   started: boolean;
   target: number;
@@ -41,6 +52,8 @@ type GameState = {
   currentIndex: number;
   turnPoints: number;
   history: Roll[]; // current-turn history
+  scoreHistory: ScoreEntry[]; // track all score changes over turns
+  currentTurnNumber: number;
   settings: {
     weights: Record<PigPose, number>;
     confettiOnWin: boolean;
@@ -443,6 +456,129 @@ function runInternalTests() {
   console.assert(scorePair("Razorback", "Trotter").points === 10, "Two specials should sum");
 }
 
+// ScoreHistory component to display player scores over turns/rounds
+const ScoreHistory: React.FC<{ scoreHistory: ScoreEntry[]; players: Player[] }> = ({ scoreHistory, players }) => {
+  if (scoreHistory.length === 0) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Trophy className="h-5 w-5" />
+            Score History
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center text-muted-foreground py-8">
+            <Trophy className="h-12 w-12 mx-auto mb-3 opacity-30" />
+            <p>No score changes yet. Start playing to see the history!</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Group score entries by turn number
+  const turnsByNumber = scoreHistory.reduce((acc, entry) => {
+    if (!acc[entry.turnNumber]) {
+      acc[entry.turnNumber] = [];
+    }
+    acc[entry.turnNumber].push(entry);
+    return acc;
+  }, {} as Record<number, ScoreEntry[]>);
+
+  const turnNumbers = Object.keys(turnsByNumber).map(Number).sort((a, b) => b - a); // Most recent first
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Trophy className="h-5 w-5" />
+          Score History
+          <Badge variant="secondary" className="ml-2">
+            {scoreHistory.length} change{scoreHistory.length === 1 ? '' : 's'}
+          </Badge>
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="max-h-96 overflow-auto space-y-4">
+          {turnNumbers.map((turnNumber) => {
+            const turnEntries = turnsByNumber[turnNumber];
+            const turnStartTime = Math.min(...turnEntries.map(e => e.timestamp));
+            const turnEndTime = Math.max(...turnEntries.map(e => e.timestamp));
+            
+            return (
+              <div key={turnNumber} className="border rounded-lg p-3 bg-amber-50/30">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="font-mono">
+                      Turn {turnNumber}
+                    </Badge>
+                    <span className="text-xs text-muted-foreground">
+                      {new Date(turnStartTime).toLocaleTimeString()}
+                    </span>
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {turnEntries.length} action{turnEntries.length === 1 ? '' : 's'}
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  {turnEntries
+                    .sort((a, b) => a.timestamp - b.timestamp)
+                    .map((entry, idx) => {
+                      const player = players.find(p => p.id === entry.playerId);
+                      const isPositive = entry.pointsEarned > 0;
+                      const isZero = entry.pointsEarned === 0;
+                      
+                      return (
+                        <div key={`${entry.playerId}-${entry.timestamp}`} className="flex items-center justify-between bg-white rounded-lg p-2 border">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-100 to-amber-200 flex items-center justify-center text-xs font-bold">
+                              {players.findIndex(p => p.id === entry.playerId) + 1}
+                            </div>
+                            <div>
+                              <div className="font-medium text-sm">{entry.playerName}</div>
+                              <div className="text-xs text-muted-foreground">
+                                {entry.action === 'hold' ? 'Held points' : 'Passed pigs'}
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <div className="text-right">
+                            <div className={`font-bold text-sm ${
+                              isPositive ? 'text-green-600' : 
+                              isZero ? 'text-gray-500' : 
+                              'text-red-600'
+                            }`}>
+                              {isPositive ? `+${entry.pointsEarned}` : 
+                               isZero ? '0' : 
+                               entry.pointsEarned}
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              {entry.previousScore} → {entry.newScore}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        
+        {scoreHistory.length > 0 && (
+          <div className="mt-4 pt-3 border-t">
+            <div className="text-xs text-muted-foreground text-center">
+              Showing {scoreHistory.length} score change{scoreHistory.length === 1 ? '' : 's'} across {turnNumbers.length} turn{turnNumbers.length === 1 ? '' : 's'}
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+};
+
 // --------------------- COMPONENT ----------------------
 export default function App() {
   const defaultPlayers: Player[] = [
@@ -457,6 +593,8 @@ export default function App() {
     currentIndex: 0,
     turnPoints: 0,
     history: [],
+    scoreHistory: [],
+    currentTurnNumber: 1,
     settings: {
       weights: { ...DEFAULT_WEIGHTS },
       confettiOnWin: true,
@@ -525,6 +663,8 @@ export default function App() {
       settings: s.settings,
       started: false,
       needsToPassPigs: false,
+      scoreHistory: [],
+      currentTurnNumber: 1,
     }));
   };
 
@@ -603,11 +743,25 @@ export default function App() {
     setState((s) => {
       // End the turn and move to next player
       const curId = s.players[s.currentIndex].id;
+      const currentPlayer = s.players[s.currentIndex];
       const nextIndex = (s.currentIndex + 1) % s.players.length;
       let finalTurns = s.finalTurns ? { ...s.finalTurns } : null;
       if (s.finalRound && finalTurns) {
         finalTurns[curId] = true; // used their last chance
       }
+      
+      // Record score change (0 points earned from passing pigs)
+      const scoreEntry: ScoreEntry = {
+        playerId: curId,
+        playerName: currentPlayer.name,
+        turnNumber: s.currentTurnNumber,
+        previousScore: currentPlayer.score,
+        newScore: currentPlayer.score, // No change in score
+        pointsEarned: 0,
+        action: 'pass_pigs',
+        timestamp: Date.now(),
+      };
+      
       return {
         ...s,
         history: [],
@@ -615,6 +769,8 @@ export default function App() {
         currentIndex: nextIndex,
         finalTurns,
         needsToPassPigs: false,
+        scoreHistory: [...s.scoreHistory, scoreEntry],
+        currentTurnNumber: nextIndex === 0 ? s.currentTurnNumber + 1 : s.currentTurnNumber,
       };
     });
   };
@@ -628,6 +784,20 @@ export default function App() {
       );
       const me = players[s.currentIndex];
       const newScore = me.score;
+      const previousScore = s.players[s.currentIndex].score;
+      const pointsEarned = s.turnPoints;
+
+      // Record score change
+      const scoreEntry: ScoreEntry = {
+        playerId: me.id,
+        playerName: me.name,
+        turnNumber: s.currentTurnNumber,
+        previousScore,
+        newScore,
+        pointsEarned,
+        action: 'hold',
+        timestamp: Date.now(),
+      };
 
       // If not yet in final round and player reached target, trigger final round
       if (!s.finalRound && newScore >= s.target) {
@@ -646,6 +816,8 @@ export default function App() {
           finalLeaderScore: newScore,
           finalTurns: turns,
           needsToPassPigs: false,
+          scoreHistory: [...s.scoreHistory, scoreEntry],
+          currentTurnNumber: nextIndex === 0 ? s.currentTurnNumber + 1 : s.currentTurnNumber,
         };
       }
 
@@ -663,6 +835,8 @@ export default function App() {
           finalTurns: turns,
           finalLeaderScore: Math.max(s.finalLeaderScore, newScore),
           needsToPassPigs: false,
+          scoreHistory: [...s.scoreHistory, scoreEntry],
+          currentTurnNumber: nextIndex === 0 ? s.currentTurnNumber + 1 : s.currentTurnNumber,
         };
       }
 
@@ -674,6 +848,8 @@ export default function App() {
         history: [],
         currentIndex: (s.currentIndex + 1) % s.players.length,
         needsToPassPigs: false,
+        scoreHistory: [...s.scoreHistory, scoreEntry],
+        currentTurnNumber: ((s.currentIndex + 1) % s.players.length) === 0 ? s.currentTurnNumber + 1 : s.currentTurnNumber,
       };
     });
   };
@@ -1129,6 +1305,11 @@ export default function App() {
               </Card>
             )}
           </div>
+        </div>
+
+        {/* Score History - Full width at bottom */}
+        <div className="mt-6">
+          <ScoreHistory scoreHistory={state.scoreHistory} players={state.players} />
         </div>
 
         <footer className="text-center text-xs text-muted-foreground mt-6">
