@@ -61,6 +61,7 @@ type GameState = {
     showRollHints: boolean;
     soundEffects: boolean;
     showPoseBadges: boolean;
+    fastRollMode: boolean;
   };
   // Final-round state
   finalRound: boolean; // true once someone Holds >= target
@@ -288,7 +289,7 @@ function useLocalState<T>(key: string, initial: T) {
   return [value, setValue] as const;
 }
 
-const PigEmoji: React.FC<{ pose: PigPose; i: number; rolling?: boolean; anticipating?: boolean; showBadge?: boolean }> = ({ pose, i, rolling, anticipating, showBadge = false }) => {
+const PigEmoji: React.FC<{ pose: PigPose; i: number; rolling?: boolean; anticipating?: boolean; showBadge?: boolean; fastRollMode?: boolean }> = ({ pose, i, rolling, anticipating, showBadge = false, fastRollMode = false }) => {
   const variants: Record<PigPose, { rotate: number; y: number; x: number; scale?: number }> = {
     "Sider-Left": { rotate: -90, y: 8, x: -10 },
     "Sider-Right": { rotate: 90, y: 8, x: 10 },
@@ -348,7 +349,7 @@ const PigEmoji: React.FC<{ pose: PigPose; i: number; rolling?: boolean; anticipa
         x: [0, i ? 2 : -2, 0]
       } : { ...v, opacity: 1 }}
       transition={{ 
-        duration: rolling ? 1.8 : anticipating ? 0.3 : 0.35, 
+        duration: rolling ? (fastRollMode ? 0.9 : 1.8) : anticipating ? (fastRollMode ? 0.15 : 0.3) : 0.35, 
         ease: rolling ? "easeInOut" : anticipating ? "easeInOut" : "easeOut",
         times: rolling ? [0, 0.2, 0.4, 0.6, 0.75, 0.9, 1] : undefined,
         repeat: anticipating ? Infinity : undefined,
@@ -397,12 +398,12 @@ const PigEmoji: React.FC<{ pose: PigPose; i: number; rolling?: boolean; anticipa
             rotate: [0, 180],
             scale: [1, 0.9, 1]
           }}
-          transition={{
-            duration: 0.9,
-            ease: "easeInOut",
-            repeat: 2,
-            repeatType: "reverse"
-          }}
+                  transition={{
+          duration: fastRollMode ? 0.45 : 0.9,
+          ease: "easeInOut",
+          repeat: 2,
+          repeatType: "reverse"
+        }}
         >
           🐖
         </motion.div>
@@ -602,6 +603,7 @@ export default function App() {
       showRollHints: true,
       soundEffects: true,
       showPoseBadges: false,
+      fastRollMode: false,
     },
     finalRound: false,
     finalLeaderIndex: null,
@@ -673,7 +675,8 @@ export default function App() {
     
     // Start anticipation phase
     setAnticipating(true);
-    await new Promise((r) => setTimeout(r, 300));
+    const anticipationDelay = state.settings.fastRollMode ? 150 : 300;
+    await new Promise((r) => setTimeout(r, anticipationDelay));
     
     // Start rolling phase
     setAnticipating(false);
@@ -685,7 +688,8 @@ export default function App() {
     }
     
     // Add rolling delay
-    await new Promise((r) => setTimeout(r, 1200));
+    const rollingDelay = state.settings.fastRollMode ? 600 : 1200;
+    await new Promise((r) => setTimeout(r, rollingDelay));
     
     const a = randWeighted(state.settings.weights);
     const b = randWeighted(state.settings.weights);
@@ -982,6 +986,13 @@ export default function App() {
                     onCheckedChange={(v) => setState((s) => ({ ...s, settings: { ...s.settings, showPoseBadges: v } }))}
                   />
                 </div>
+                <div className="flex items-center justify-between">
+                  <Label>Fast roll mode</Label>
+                  <Switch
+                    checked={state.settings.fastRollMode}
+                    onCheckedChange={(v) => setState((s) => ({ ...s, settings: { ...s.settings, fastRollMode: v } }))}
+                  />
+                </div>
                 <Separator />
                 <div>
                   <div className="font-semibold mb-2">Outcome Weights</div>
@@ -1121,8 +1132,8 @@ export default function App() {
                         </div>
                        
                        <div className="flex items-center justify-center gap-8 h-44">
-                         <PigEmoji pose={state.history[state.history.length - 1]?.pigs[0]?.pose ?? "Sider-Left"} i={0} rolling={rolling} anticipating={anticipating} showBadge={state.settings.showPoseBadges} />
-                         <PigEmoji pose={state.history[state.history.length - 1]?.pigs[1]?.pose ?? "Sider-Right"} i={1} rolling={rolling} anticipating={anticipating} showBadge={state.settings.showPoseBadges} />
+                         <PigEmoji pose={state.history[state.history.length - 1]?.pigs[0]?.pose ?? "Sider-Left"} i={0} rolling={rolling} anticipating={anticipating} showBadge={state.settings.showPoseBadges} fastRollMode={state.settings.fastRollMode} />
+                         <PigEmoji pose={state.history[state.history.length - 1]?.pigs[1]?.pose ?? "Sider-Right"} i={1} rolling={rolling} anticipating={anticipating} showBadge={state.settings.showPoseBadges} fastRollMode={state.settings.fastRollMode} />
                        </div>
                       
                       {/* Pose Legend */}
